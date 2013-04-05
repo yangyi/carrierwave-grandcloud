@@ -51,16 +51,18 @@ module CarrierWave
           end
         end
 
-        def url(expires_at = Time.now + 3000)
+        def url(options = {})
+          options.merge! :expires_at => Time.now + 3600
           unless @uploader.grandcloud_bucket_private
             "http://#{Sndacs::REGION_CONTENT_HOST % @uploader.grandcloud_location}/#{@uploader.grandcloud_bucket}/#{path}"
           else
             object = bucket.objects.find(@path)
-            if bucket.policy == "Allow"
-              object.url
-            else
-              object.temporary_url(expires_at)
-            end
+            object.temporary_url(options[:expires_at])
+            # if bucket.policy == "Allow"
+            #   object.url
+            # else
+            #   object.temporary_url(expires_at)
+            # end
           end
         end
 
@@ -80,7 +82,7 @@ module CarrierWave
             return @bucket if @bucket
             service = Sndacs::Service.new(:access_key_id => @uploader.grandcloud_access_id,
                               :secret_access_key => @uploader.grandcloud_access_key)
-            @bucket = service.bucket(@uploader.grandcloud_bucket, @uploader.grandcloud_location)
+            @bucket = service.buckets.find(@uploader.grandcloud_bucket)
             @bucket
           end
 
